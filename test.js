@@ -8,6 +8,7 @@ var sinon = require('sinon');
 var rimraf = require('rimraf');
 var fs = require('graceful-fs');
 var sysPath = require('path');
+var cp = require('child_process');
 chai.use(require('sinon-chai'));
 var os = process.platform;
 
@@ -77,13 +78,16 @@ beforeEach(function() {
   fixturesPath = getFixturePath('');
 });
 
-function closeWatchers() {
+function closeWatchers(done) {
   var u;
   while (u = usedWatchers.pop()) u.close();
+  if (done) {
+    process.env.TRAVIS && os === 'darwin' ? setTimeout(done, 500) : done();
+  }
 }
 function disposeWatcher(watcher) {
   if (!watcher || !watcher.close) return;
-  osXFsWatch ? usedWatchers.push(watcher) : watcher.close();
+  os === 'darwin' ? usedWatchers.push(watcher) : watcher.close();
 }
 afterEach(function() {
   disposeWatcher(watcher);
@@ -172,7 +176,7 @@ function runTests(baseopts) {
       waitFor([readySpy], function() {
         readySpy.should.have.been.calledOnce;
         rawSpy = undefined;
-        done()
+        closeWatchers(done);
       });
     });
     it('should produce an instance of chokidar.FSWatcher', function() {
@@ -663,6 +667,59 @@ function runTests(baseopts) {
             });
           });
       }));
+    });
+    it('should treat glob-like directory names as literal directory names when globbing is disabled', function(done) {
+      options.disableGlobbing = true;
+      var spy = sinon.spy();
+      var filePath = getFixturePath('nota[glob]/a.txt');
+      var watchPath = getFixturePath('nota[glob]');
+      var matchingDir = getFixturePath('notag');
+      var matchingFile = getFixturePath('notag/b.txt');
+      var matchingFile2 = getFixturePath('notal');
+      fs.mkdirSync(watchPath, 0x1ed);
+      fs.writeFileSync(filePath, 'b');
+      fs.mkdirSync(matchingDir, 0x1ed);
+      fs.writeFileSync(matchingFile, 'c');
+      fs.writeFileSync(matchingFile2, 'd');
+      watcher = chokidar.watch(watchPath, options)
+        .on('all', spy)
+        .on('ready', function() {
+          spy.should.have.been.calledWith('add', filePath);
+          spy.should.not.have.been.calledWith('addDir', matchingDir);
+          spy.should.not.have.been.calledWith('add', matchingFile);
+          spy.should.not.have.been.calledWith('add', matchingFile2);
+          w(fs.writeFile.bind(fs, filePath, Date.now(), simpleCb))();
+          waitFor([spy.withArgs('change', filePath)], function() {
+            spy.should.have.been.calledWith('change', filePath);
+            done();
+          });
+        });
+    });
+    it('should treat glob-like filenames as literal filenames when globbing is disabled', function(done) {
+      options.disableGlobbing = true;
+      var spy = sinon.spy();
+      var filePath = getFixturePath('nota[glob]');
+      var watchPath = getFixturePath('nota[glob]');
+      var matchingDir = getFixturePath('notag');
+      var matchingFile = getFixturePath('notag/a.txt');
+      var matchingFile2 = getFixturePath('notal');
+      fs.writeFileSync(filePath, 'b');
+      fs.mkdirSync(matchingDir, 0x1ed);
+      fs.writeFileSync(matchingFile, 'c');
+      fs.writeFileSync(matchingFile2, 'd');
+      watcher = chokidar.watch(watchPath, options)
+        .on('all', spy)
+        .on('ready', function() {
+          spy.should.have.been.calledWith('add', filePath);
+          spy.should.not.have.been.calledWith('addDir', matchingDir);
+          spy.should.not.have.been.calledWith('add', matchingFile);
+          spy.should.not.have.been.calledWith('add', matchingFile2);
+          w(fs.writeFile.bind(fs, filePath, Date.now(), simpleCb))();
+          waitFor([spy.withArgs('change', filePath)], function() {
+            spy.should.have.been.calledWith('change', filePath);
+            done();
+          });
+        });
     });
     it('should not prematurely filter dirs against complex globstar patterns', function(done) {
       var spy = sinon.spy();
@@ -1764,6 +1821,22 @@ function runTests(baseopts) {
         });
       });
     });
+    it('should not prevent the process from exiting', function(done) {
+        var scriptFile = getFixturePath('script.js');
+        var scriptContent = '\
+        var chokidar = require("' + __dirname.replace(/\\/g, '\\\\') + '");\n\
+        var watcher = chokidar.watch("' + scriptFile.replace(/\\/g, '\\\\') + '");\n\
+        watcher.close();\n\
+        process.stdout.write("closed");\n';
+        fs.writeFile(scriptFile, scriptContent, function (err) {
+            if (err) throw err;
+            cp.exec('node ' + scriptFile, function (err, stdout) {
+                if (err) throw err;
+                expect(stdout.toString()).to.equal('closed');
+                done();
+            });
+        });
+    });
   });
   describe('env variable option override', function() {
     describe('CHOKIDAR_USEPOLLING', function() {
@@ -1817,6 +1890,21 @@ function runTests(baseopts) {
 
         watcher = chokidar.watch(fixturesPath, options).on('ready', function() {
           watcher.options.usePolling.should.be.true;
+          done();
+        });
+      });
+    });
+    describe('CHOKIDAR_INTERVAL', function() {
+      afterEach(function() {
+        delete process.env.CHOKIDAR_INTERVAL;
+      });
+
+      it('should make options.interval = CHOKIDAR_INTERVAL when it is set', function(done) {
+        options.interval = 100;
+        process.env.CHOKIDAR_INTERVAL = 1500;
+
+        watcher = chokidar.watch(fixturesPath, options).on('ready', function() {
+          watcher.options.interval.should.be.equal(1500);
           done();
         });
       });
