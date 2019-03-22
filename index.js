@@ -633,11 +633,11 @@ FSWatcher.prototype.add = function(paths, _origAdd, _internal) {
   return this;
 };
 
-// Public method: Close watchers or start ignoring events from specified paths.
-
-// * paths     - string or array of strings, file/directory paths and/or globs
-
-// Returns instance of FSWatcher for chaining.
+/**
+ * Close watchers or start ignoring events from specified paths.
+ * @param {Array<String>} paths - string or array of strings, file/directory paths and/or globs
+ * @return {FSWatcher} for chaining
+*/
 FSWatcher.prototype.unwatch = function(paths) {
   if (this.closed) return this;
   paths = flatten(arrify(paths));
@@ -664,9 +664,10 @@ FSWatcher.prototype.unwatch = function(paths) {
   return this;
 };
 
-// Public method: Close watchers and remove all listeners from watched paths.
-
-// Returns instance of FSWatcher for chaining.
+/**
+ * Close watchers and remove all listeners from watched paths.
+ * @return {FSWatcher} for chaining
+*/
 FSWatcher.prototype.close = function() {
   if (this.closed) return this;
 
@@ -681,9 +682,10 @@ FSWatcher.prototype.close = function() {
   return this;
 };
 
-// Public method: Expose list of watched paths
-
-// Returns object w/ dir paths as keys and arrays of contained paths as values.
+/**
+ * Expose list of watched paths
+ * @return {{String: Array<String>}} for chaining
+*/
 FSWatcher.prototype.getWatched = function() {
   var watchList = {};
   Object.keys(this._watched).forEach(function(dir) {

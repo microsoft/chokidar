@@ -31,25 +31,25 @@
   ],
   "devDependencies": {
     "chai": "^3.2.0",
-    "coveralls": "^2.11.2",
+    "coveralls": "^3.0.3",
     "graceful-fs": "4.1.4",
-    "istanbul": "^0.3.20",
-    "mocha": "^3.0.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^6.1.4",
     "rimraf": "^2.4.3",
     "sinon": "^1.10.3",
     "sinon-chai": "^2.6.0"
   },
   "optionalDependencies": {
-    "vscode-fsevents": "0.3.10"
+    "fsevents": "^2.0.6"
   },
   "dependencies": {
     "vscode-anymatch": "1.3.3",
-    "async-each": "^1.0.0",
-    "glob-parent": "^2.0.0",
+    "async-each": "^1.0.1",
+    "glob-parent": "^3.1.0",
     "inherits": "^2.0.1",
     "is-binary-path": "^1.0.0",
-    "is-glob": "^2.0.0",
+    "is-glob": "^4.0.0",
     "path-is-absolute": "^1.0.0",
-    "readdirp": "^2.0.0"
+    "readdirp": "^2.2.1"
   }
 }
