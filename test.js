@@ -7,13 +7,23 @@ var should = chai.should();
 var sinon = require('sinon');
 var rimraf = require('rimraf');
 var fs = require('graceful-fs');
+var rimraf = require('rimraf');
 var sysPath = require('path');
+var upath = require("upath");
 var cp = require('child_process');
 chai.use(require('sinon-chai'));
 var os = process.platform;
 
 function getFixturePath (subPath) {
   return sysPath.join(
+    __dirname,
+    'test-fixtures',
+    subdir && subdir.toString() || '',
+    subPath
+  );
+}
+function getGlobPath (subPath) {
+  return upath.join(
     __dirname,
     'test-fixtures',
     subdir && subdir.toString() || '',
@@ -34,7 +44,8 @@ var watcher,
     win32Polling010,
     slowerDelay,
     testCount = 1,
-    mochaIt = it;
+    mochaIt = it,
+    PERM_ARR = 0x1ed; // rwe, r+e, r+e; 755
 
 
 if (!fs.readFileSync(__filename).toString().match(/\sit\.only\(/)) {
@@ -59,12 +70,12 @@ before(function(done) {
   }
   rimraf(sysPath.join(__dirname, 'test-fixtures'), function(err) {
     if (err) throw err;
-    fs.mkdir(fixturesPath, 0x1ed, function(err) {
+    fs.mkdir(fixturesPath, PERM_ARR, function(err) {
       if (err) throw err;
       while (subdir < testCount) {
         subdir++;
         fixturesPath = getFixturePath('');
-        fs.mkdir(fixturesPath, 0x1ed, function() {
+        fs.mkdir(fixturesPath, PERM_ARR, function() {
           fs.writeFile(sysPath.join(this, 'change.txt'), 'b', wrote);
           fs.writeFile(sysPath.join(this, 'unlink.txt'), 'b', wrote);
         }.bind(fixturesPath));
@@ -203,12 +214,204 @@ function runTests(baseopts) {
         });
       }));
     });
+    it('should emit nine `add` events when nine files were added in one directory', function(done) {
+      var spy = sinon.spy();
+      var test1Path = getFixturePath('add1.txt');
+      var test2Path = getFixturePath('add2.txt');
+      var test3Path = getFixturePath('add3.txt');
+      var test4Path = getFixturePath('add4.txt');
+      var test5Path = getFixturePath('add5.txt');
+      var test6Path = getFixturePath('add6.txt');
+      var test7Path = getFixturePath('add7.txt');
+      var test8Path = getFixturePath('add8.txt');
+      var test9Path = getFixturePath('add9.txt');
+      watcher.on('add', spy).on('ready', w(function() {
+        fs.writeFile(test1Path, Date.now(), function() {
+          fs.writeFile(test2Path, Date.now(), function() {
+            fs.writeFile(test3Path, Date.now(), function() {
+              fs.writeFile(test4Path, Date.now(), function() {
+                fs.writeFile(test5Path, Date.now(), w(function() {
+                  fs.writeFile(test6Path, Date.now(), function() {
+                    fs.writeFile(test7Path, Date.now(), function() {
+                      fs.writeFile(test8Path, Date.now(), function() {
+                        fs.writeFile(test9Path, Date.now(), simpleCb);
+                      });
+                    });
+                  });
+                }, 200));
+              });
+            });
+          });
+        });
+        waitFor([[spy, 9]], function() {
+          spy.should.have.been.calledWith(test1Path);
+          spy.should.have.been.calledWith(test2Path);
+          spy.should.have.been.calledWith(test3Path);
+          spy.should.have.been.calledWith(test4Path);
+          spy.should.have.been.calledWith(test5Path);
+          spy.should.have.been.calledWith(test6Path);
+          spy.should.have.been.calledWith(test7Path);
+          spy.should.have.been.calledWith(test8Path);
+          spy.should.have.been.calledWith(test9Path);
+          done();
+        });
+      }));
+    });
+    it('should emit thirtythree `add` events when thirtythree files were added in nine directories', function(done) {
+      var spy = sinon.spy();
+      var test1Path = getFixturePath('add1.txt');
+      var testb1Path = getFixturePath('b/add1.txt');
+      var testc1Path = getFixturePath('c/add1.txt');
+      var testd1Path = getFixturePath('d/add1.txt');
+      var teste1Path = getFixturePath('e/add1.txt');
+      var testf1Path = getFixturePath('f/add1.txt');
+      var testg1Path = getFixturePath('g/add1.txt');
+      var testh1Path = getFixturePath('h/add1.txt');
+      var testi1Path = getFixturePath('i/add1.txt');
+      var test2Path = getFixturePath('add2.txt');
+      var testb2Path = getFixturePath('b/add2.txt');
+      var testc2Path = getFixturePath('c/add2.txt');
+      var test3Path = getFixturePath('add3.txt');
+      var testb3Path = getFixturePath('b/add3.txt');
+      var testc3Path = getFixturePath('c/add3.txt');
+      var test4Path = getFixturePath('add4.txt');
+      var testb4Path = getFixturePath('b/add4.txt');
+      var testc4Path = getFixturePath('c/add4.txt');
+      var test5Path = getFixturePath('add5.txt');
+      var testb5Path = getFixturePath('b/add5.txt');
+      var testc5Path = getFixturePath('c/add5.txt');
+      var test6Path = getFixturePath('add6.txt');
+      var testb6Path = getFixturePath('b/add6.txt');
+      var testc6Path = getFixturePath('c/add6.txt');
+      var test7Path = getFixturePath('add7.txt');
+      var testb7Path = getFixturePath('b/add7.txt');
+      var testc7Path = getFixturePath('c/add7.txt');
+      var test8Path = getFixturePath('add8.txt');
+      var testb8Path = getFixturePath('b/add8.txt');
+      var testc8Path = getFixturePath('c/add8.txt');
+      var test9Path = getFixturePath('add9.txt');
+      var testb9Path = getFixturePath('b/add9.txt');
+      var testc9Path = getFixturePath('c/add9.txt');
+      fs.mkdirSync(getFixturePath('b'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('c'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('d'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('e'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('f'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('g'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('h'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('i'), PERM_ARR);
+      watcher.on('add', spy).on('ready', w(function() {
+        fs.writeFile(test1Path, Date.now(), function() {
+          fs.writeFile(test2Path, Date.now(), function() {
+            fs.writeFile(test3Path, Date.now(), function() {
+              fs.writeFile(test4Path, Date.now(), function() {
+                fs.writeFile(test5Path, Date.now(), w(function() {
+                  fs.writeFile(test6Path, Date.now(), function() {
+                    fs.writeFile(test7Path, Date.now(), function() {
+                      fs.writeFile(test8Path, Date.now(), function() {
+                        fs.writeFile(test9Path, Date.now(), function() {
+                          fs.writeFile(testb1Path, Date.now(), function() {
+                            fs.writeFile(testb2Path, Date.now(), function() {
+                              fs.writeFile(testb3Path, Date.now(), function() {
+                                fs.writeFile(testb4Path, Date.now(), function() {
+                                  fs.writeFile(testb5Path, Date.now(), w(function() {
+                                    fs.writeFile(testb6Path, Date.now(), function() {
+                                      fs.writeFile(testb7Path, Date.now(), function() {
+                                        fs.writeFile(testb8Path, Date.now(), function() {
+                                          fs.writeFile(testb9Path, Date.now(), function() {
+                                            fs.writeFile(testc1Path, Date.now(), function() {
+                                              fs.writeFile(testc2Path, Date.now(), function() {
+                                                fs.writeFile(testc3Path, Date.now(), function() {
+                                                  fs.writeFile(testc4Path, Date.now(), function() {
+                                                    fs.writeFile(testc5Path, Date.now(), w(function() {
+                                                      fs.writeFile(testc6Path, Date.now(), function() {
+                                                        fs.writeFile(testc7Path, Date.now(), function() {
+                                                          fs.writeFile(testc8Path, Date.now(), function() {
+                                                            fs.writeFile(testc9Path, Date.now(), function() {
+                                                              fs.writeFile(testd1Path, Date.now(), function() {
+                                                                fs.writeFile(teste1Path, Date.now(), function() {
+                                                                  fs.writeFile(testf1Path, Date.now(), w(function() {
+                                                                    fs.writeFile(testg1Path, Date.now(), function() {
+                                                                      fs.writeFile(testh1Path, Date.now(), function() {
+                                                                        fs.writeFile(testi1Path, Date.now(), function() {
+                                                                          simpleCb();
+                                                                        });
+                                                                      });
+                                                                    });
+                                                                  }, 100));
+                                                                });
+                                                              });
+                                                            });
+                                                          });
+                                                        });
+                                                      });
+                                                    }, 150));
+                                                  });
+                                                });
+                                              });
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
+                                  }, 200));
+                                });
+                              });
+                            });
+                          });
+                        });
+                      });
+                    });
+                  });
+                }, 200));
+              });
+            });
+          });
+        });
+        waitFor([[spy, 33]], function() {
+          spy.should.have.been.calledWith(test1Path);
+          spy.should.have.been.calledWith(test2Path);
+          spy.should.have.been.calledWith(test3Path);
+          spy.should.have.been.calledWith(test4Path);
+          spy.should.have.been.calledWith(test5Path);
+          spy.should.have.been.calledWith(test6Path);
+          spy.should.have.been.calledWith(test7Path);
+          spy.should.have.been.calledWith(test8Path);
+          spy.should.have.been.calledWith(test9Path);
+          spy.should.have.been.calledWith(testb1Path);
+          spy.should.have.been.calledWith(testb2Path);
+          spy.should.have.been.calledWith(testb3Path);
+          spy.should.have.been.calledWith(testb4Path);
+          spy.should.have.been.calledWith(testb5Path);
+          spy.should.have.been.calledWith(testb6Path);
+          spy.should.have.been.calledWith(testb7Path);
+          spy.should.have.been.calledWith(testb8Path);
+          spy.should.have.been.calledWith(testb9Path);
+          spy.should.have.been.calledWith(testc1Path);
+          spy.should.have.been.calledWith(testc2Path);
+          spy.should.have.been.calledWith(testc3Path);
+          spy.should.have.been.calledWith(testc4Path);
+          spy.should.have.been.calledWith(testc5Path);
+          spy.should.have.been.calledWith(testc6Path);
+          spy.should.have.been.calledWith(testc7Path);
+          spy.should.have.been.calledWith(testc8Path);
+          spy.should.have.been.calledWith(testc9Path);
+          spy.should.have.been.calledWith(testd1Path);
+          spy.should.have.been.calledWith(teste1Path);
+          spy.should.have.been.calledWith(testf1Path);
+          spy.should.have.been.calledWith(testg1Path);
+          spy.should.have.been.calledWith(testh1Path);
+          spy.should.have.been.calledWith(testi1Path);
+          done();
+        });
+      }));
+    });
     it('should emit `addDir` event when directory was added', function(done) {
       var spy = sinon.spy();
       var testDir = getFixturePath('subdir');
       watcher.on('addDir', spy).on('ready', w(function() {
         spy.should.not.have.been.called;
-        fs.mkdir(testDir, 0x1ed, simpleCb);
+        fs.mkdir(testDir, PERM_ARR, simpleCb);
         waitFor([spy], function() {
           spy.should.have.been.calledOnce;
           spy.should.have.been.calledWith(testDir);
@@ -251,7 +454,7 @@ function runTests(baseopts) {
     it('should emit `unlinkDir` event when a directory was removed', function(done) {
       var spy = sinon.spy();
       var testDir = getFixturePath('subdir');
-      fs.mkdirSync(testDir, 0x1ed);
+      fs.mkdirSync(testDir, PERM_ARR);
       watcher.on('unlinkDir', spy).on('ready', function() {
         w(fs.rmdir.bind(fs, testDir, simpleCb))();
         waitFor([spy], function() {
@@ -259,6 +462,26 @@ function runTests(baseopts) {
           expect(spy.args[0][1]).to.not.be.ok; // no stats
           rawSpy.should.have.been.called;
           if (!osXFsWatch010) spy.should.have.been.calledOnce;
+          done();
+        });
+      });
+    });
+    it('should emit two `unlinkDir` event when two nested directories were removed', function(done) {
+      var spy = sinon.spy();
+      var testDir = getFixturePath('subdir');
+      var testDir2 = getFixturePath('subdir/subdir2');
+      var testDir3 = getFixturePath('subdir/subdir2/subdir3');
+      fs.mkdirSync(testDir, PERM_ARR);
+      fs.mkdirSync(testDir2, PERM_ARR);
+      fs.mkdirSync(testDir3, PERM_ARR);
+      watcher.on('unlinkDir', spy).on('ready', function() {
+        rimraf(testDir2, simpleCb); // test removing in one
+        waitFor([spy], function() {
+          spy.should.have.been.calledWith(testDir2);
+          spy.should.have.been.calledWith(testDir3);
+          expect(spy.args[0][1]).to.not.be.ok; // no stats
+          rawSpy.should.have.been.called;
+          if (!osXFsWatch010) spy.should.have.been.calledTwice;
           done();
         });
       });
@@ -347,7 +570,7 @@ function runTests(baseopts) {
       var testPath = getFixturePath('subdir/add.txt');
       watcher.on('add', spy).on('ready', function() {
         spy.should.not.have.been.called;
-        fs.mkdir(testDir, 0x1ed, function() {
+        fs.mkdir(testDir, PERM_ARR, function() {
           fs.writeFile(testPath, Date.now(), simpleCb);
         });
         waitFor([spy], function() {
@@ -369,13 +592,13 @@ function runTests(baseopts) {
         .on('unlinkDir', unlinkSpy)
         .on('addDir', addSpy)
         .on('ready', function() {
-          fs.mkdir(parentPath, 0x1ed, w(function() {
+          fs.mkdir(parentPath, PERM_ARR, w(function() {
             fs.rmdir(parentPath, simpleCb);
           }, win32Polling ? 900 : 300));
           waitFor([unlinkSpy.withArgs(parentPath)], function() {
             unlinkSpy.should.have.been.calledWith(parentPath);
-            fs.mkdir(parentPath, 0x1ed, w(function() {
-              fs.mkdir(subPath, 0x1ed, simpleCb);
+            fs.mkdir(parentPath, PERM_ARR, w(function() {
+              fs.mkdir(subPath, PERM_ARR, simpleCb);
             }, win32Polling ? 2200 : 1200));
             waitFor([[addSpy, 3]], function() {
               addSpy.should.have.been.calledWith(parentPath);
@@ -419,7 +642,7 @@ function runTests(baseopts) {
       var unlinkSpy = sinon.spy(function unlinkSpy(){});
       var addSpy = sinon.spy(function addSpy(){});
       var testPath = getFixturePath('unlink.txt');
-      watcher = chokidar.watch(testPath, options)
+      watcher = chokidar.watch([testPath], options)
         .on('unlink', unlinkSpy)
         .on('add', addSpy)
         .on('ready', function() {
@@ -434,6 +657,7 @@ function runTests(baseopts) {
           }));
         });
     });
+
     it('should ignore unwatched siblings', function(done) {
       var spy = sinon.spy();
       var testPath = getFixturePath('add.txt');
@@ -449,6 +673,143 @@ function runTests(baseopts) {
           });
         }));
     });
+
+    // PR 682 is failing.
+    describe.skip('Skipping gh-682: should detect unlink', function() {
+      it('should detect unlink while watching a non-existent second file in another directory', function(done) {
+        var spy = sinon.spy();
+        var testPath = getFixturePath('unlink.txt');
+        var otherDirPath = getFixturePath('other-dir');
+        var otherPath = getFixturePath('other-dir/other.txt');
+        fs.mkdirSync(otherDirPath, PERM_ARR);
+        // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
+        watcher = chokidar.watch([testPath, otherPath], options)
+          .on('unlink', spy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([spy], function() {
+              spy.should.have.been.calledWith(testPath);
+              done();
+            });
+          });
+      });
+      it('should detect unlink and re-add while watching a second file', function(done) {
+        options.ignoreInitial = true;
+        var unlinkSpy = sinon.spy(function unlinkSpy(){});
+        var addSpy = sinon.spy(function addSpy(){});
+        var testPath = getFixturePath('unlink.txt');
+        var otherPath = getFixturePath('other.txt');
+        fs.writeFileSync(otherPath, 'other');
+        watcher = chokidar.watch([testPath, otherPath], options)
+          .on('unlink', unlinkSpy)
+          .on('add', addSpy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([unlinkSpy], w(function() {
+              unlinkSpy.should.have.been.calledWith(testPath);
+              w(fs.writeFile.bind(fs, testPath, 're-added', simpleCb))();
+              waitFor([addSpy], function() {
+                addSpy.should.have.been.calledWith(testPath);
+                done();
+              });
+            }));
+          });
+      });
+      it('should detect unlink and re-add while watching a non-existent second file in another directory', function(done) {
+        options.ignoreInitial = true;
+        var unlinkSpy = sinon.spy(function unlinkSpy(){});
+        var addSpy = sinon.spy(function addSpy(){});
+        var testPath = getFixturePath('unlink.txt');
+        var otherDirPath = getFixturePath('other-dir');
+        var otherPath = getFixturePath('other-dir/other.txt');
+        fs.mkdirSync(otherDirPath, PERM_ARR);
+        // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
+        watcher = chokidar.watch([testPath, otherPath], options)
+          .on('unlink', unlinkSpy)
+          .on('add', addSpy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([unlinkSpy], w(function() {
+              unlinkSpy.should.have.been.calledWith(testPath);
+              w(fs.writeFile.bind(fs, testPath, 're-added', simpleCb))();
+              waitFor([addSpy], function() {
+                addSpy.should.have.been.calledWith(testPath);
+                done();
+              });
+            }));
+          });
+      });
+      it('should detect unlink and re-add while watching a non-existent second file in the same directory', function(done) {
+        options.ignoreInitial = true;
+        var unlinkSpy = sinon.spy(function unlinkSpy(){});
+        var addSpy = sinon.spy(function addSpy(){});
+        var testPath = getFixturePath('unlink.txt');
+        var otherPath = getFixturePath('other.txt');
+        // intentionally for this test don't write fs.writeFileSync(otherPath, 'other');
+        watcher = chokidar.watch([testPath, otherPath], options)
+          .on('unlink', unlinkSpy)
+          .on('add', addSpy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([unlinkSpy], w(function() {
+              unlinkSpy.should.have.been.calledWith(testPath);
+              w(fs.writeFile.bind(fs, testPath, 're-added', simpleCb))();
+              waitFor([addSpy], function() {
+                addSpy.should.have.been.calledWith(testPath);
+                done();
+              });
+            }));
+          });
+      });
+      it('should detect two unlinks and one re-add', function(done) {
+        options.ignoreInitial = true;
+        var unlinkSpy = sinon.spy(function unlinkSpy(){});
+        var addSpy = sinon.spy(function addSpy(){});
+        var testPath = getFixturePath('unlink.txt');
+        var otherPath = getFixturePath('other.txt');
+        fs.writeFileSync(otherPath, 'other');
+        watcher = chokidar.watch([testPath, otherPath], options)
+          .on('unlink', unlinkSpy)
+          .on('add', addSpy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, otherPath, simpleCb))();
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([[unlinkSpy, 2]], w(function() {
+              unlinkSpy.should.have.been.calledWith(otherPath);
+              unlinkSpy.should.have.been.calledWith(testPath);
+              w(fs.writeFile.bind(fs, testPath, 're-added', simpleCb))();
+              waitFor([addSpy], function() {
+                addSpy.should.have.been.calledWith(testPath);
+                done();
+              });
+            }));
+          });
+      });
+      it('should detect unlink and re-add while watching a second file and a non-existent third file', function(done) {
+        options.ignoreInitial = true;
+        var unlinkSpy = sinon.spy(function unlinkSpy(){});
+        var addSpy = sinon.spy(function addSpy(){});
+        var testPath = getFixturePath('unlink.txt');
+        var otherPath = getFixturePath('other.txt');
+        var other2Path = getFixturePath('other2.txt');
+        fs.writeFileSync(otherPath, 'other');
+        // intentionally for this test don't write fs.writeFileSync(other2Path, 'other2');
+        watcher = chokidar.watch([testPath, otherPath, other2Path], options)
+          .on('unlink', unlinkSpy)
+          .on('add', addSpy)
+          .on('ready', function() {
+            w(fs.unlink.bind(fs, testPath, simpleCb))();
+            waitFor([unlinkSpy], w(function() {
+              unlinkSpy.should.have.been.calledWith(testPath);
+              w(fs.writeFile.bind(fs, testPath, 're-added', simpleCb))();
+              waitFor([addSpy], function() {
+                addSpy.should.have.been.calledWith(testPath);
+                done();
+              });
+            }));
+          });
+      });
+    });
   });
   describe('renamed directory', function() {
     it('should emit `add` for a file in a renamed directory', function(done) {
@@ -458,7 +819,7 @@ function runTests(baseopts) {
       var testPath = getFixturePath('subdir/add.txt');
       var renamedDir = getFixturePath('subdir-renamed');
       var expectedPath = sysPath.join(renamedDir, 'add.txt')
-      fs.mkdir(testDir, 0x1ed, function() {
+      fs.mkdir(testDir, PERM_ARR, function() {
         fs.writeFile(testPath, Date.now(), function() {
           watcher = chokidar.watch(fixturesPath, options)
             .on('add', spy)
@@ -499,7 +860,7 @@ function runTests(baseopts) {
         .on('ready', function() {
           spy.should.not.have.been.called;
           w(function() {
-            fs.mkdir(testDir, 0x1ed, w(function() {
+            fs.mkdir(testDir, PERM_ARR, w(function() {
               fs.writeFile(testPath, 'hello', simpleCb);
             }, win32Polling010 ? 900 : undefined));
           }, win32Polling010 ? 900 : undefined)();
@@ -515,10 +876,10 @@ function runTests(baseopts) {
     before(closeWatchers);
     it('should correctly watch and emit based on glob input', function(done) {
       var spy = sinon.spy();
-      var testPath = getFixturePath('*a*.txt');
+      var watchPath = getGlobPath('*a*.txt');
       var addPath = getFixturePath('add.txt');
       var changePath = getFixturePath('change.txt');
-      watcher = chokidar.watch(testPath, options)
+      watcher = chokidar.watch(watchPath, options)
         .on('all', spy)
         .on('ready', function() {
           spy.should.have.been.calledWith('add', changePath);
@@ -537,10 +898,10 @@ function runTests(baseopts) {
     });
     it('should respect negated glob patterns', function(done) {
       var spy = sinon.spy();
-      var testPath = getFixturePath('*');
-      var negatedPath = '!' + getFixturePath('*a*.txt');
+      var watchPath = getGlobPath('*');
+      var negatedWatchPath = '!' + getGlobPath('*a*.txt');
       var unlinkPath = getFixturePath('unlink.txt');
-      watcher = chokidar.watch([testPath, negatedPath], options)
+      watcher = chokidar.watch([watchPath, negatedWatchPath], options)
         .on('all', spy)
         .on('ready', function() {
           spy.should.have.been.calledOnce;
@@ -555,9 +916,9 @@ function runTests(baseopts) {
     });
     it('should traverse subdirs to match globstar patterns', function(done) {
       var spy = sinon.spy();
-      var watchPath = getFixturePath('../../test-*/' + subdir + '/**/a*.txt');
-      fs.mkdirSync(getFixturePath('subdir'), 0x1ed);
-      fs.mkdirSync(getFixturePath('subdir/subsub'), 0x1ed);
+      var watchPath = getGlobPath('../../test-*/' + subdir + '/**/a*.txt');
+      fs.mkdirSync(getFixturePath('subdir'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub'), PERM_ARR);
       fs.writeFileSync(getFixturePath('subdir/a.txt'), 'b');
       fs.writeFileSync(getFixturePath('subdir/b.txt'), 'b');
       fs.writeFileSync(getFixturePath('subdir/subsub/ab.txt'), 'b');
@@ -586,12 +947,12 @@ function runTests(baseopts) {
     });
     it('should resolve relative paths with glob patterns', function(done) {
       var spy = sinon.spy();
-      var testPath = 'test-*/' + subdir + '/*a*.txt';
+      var watchPath = 'test-*/' + subdir + '/*a*.txt';
       // getFixturePath() returns absolute paths, so use sysPath.join() instead
       var addPath = sysPath.join('test-fixtures', subdir.toString(), 'add.txt');
       var changePath = sysPath.join('test-fixtures', subdir.toString(), 'change.txt');
       var unlinkPath = sysPath.join('test-fixtures', subdir.toString(), 'unlink.txt');
-      watcher = chokidar.watch(testPath, options)
+      watcher = chokidar.watch(watchPath, options)
         .on('all', spy)
         .on('ready', function() {
           spy.should.have.been.calledWith('add', changePath);
@@ -614,7 +975,7 @@ function runTests(baseopts) {
       var changePath = getFixturePath('change.txt');
       var unlinkPath = getFixturePath('unlink.txt');
       var addPath = getFixturePath('add.txt');
-      var watchPaths = [getFixturePath('change*'), getFixturePath('unlink*')];
+      var watchPaths = [getGlobPath('change*'), getGlobPath('unlink*')];
       watcher = chokidar.watch(watchPaths, options)
         .on('all', spy)
         .on('ready', function() {
@@ -638,7 +999,7 @@ function runTests(baseopts) {
     it('should correctly handle intersecting glob patterns', function(done) {
       var spy = sinon.spy();
       var changePath = getFixturePath('change.txt');
-      var watchPaths = [getFixturePath('cha*'), getFixturePath('*nge.*')];
+      var watchPaths = [getGlobPath('cha*'), getGlobPath('*nge.*')];
       watcher = chokidar.watch(watchPaths, options)
         .on('all', spy)
         .on('ready', function() {
@@ -673,12 +1034,13 @@ function runTests(baseopts) {
       var spy = sinon.spy();
       var filePath = getFixturePath('nota[glob]/a.txt');
       var watchPath = getFixturePath('nota[glob]');
+      var testDir = getFixturePath('nota[glob]');
       var matchingDir = getFixturePath('notag');
       var matchingFile = getFixturePath('notag/b.txt');
       var matchingFile2 = getFixturePath('notal');
-      fs.mkdirSync(watchPath, 0x1ed);
+      fs.mkdirSync(testDir, PERM_ARR);
       fs.writeFileSync(filePath, 'b');
-      fs.mkdirSync(matchingDir, 0x1ed);
+      fs.mkdirSync(matchingDir, PERM_ARR);
       fs.writeFileSync(matchingFile, 'c');
       fs.writeFileSync(matchingFile2, 'd');
       watcher = chokidar.watch(watchPath, options)
@@ -699,12 +1061,13 @@ function runTests(baseopts) {
       options.disableGlobbing = true;
       var spy = sinon.spy();
       var filePath = getFixturePath('nota[glob]');
+      // This isn't using getGlobPath because it isn't treated as a glob
       var watchPath = getFixturePath('nota[glob]');
       var matchingDir = getFixturePath('notag');
       var matchingFile = getFixturePath('notag/a.txt');
       var matchingFile2 = getFixturePath('notal');
       fs.writeFileSync(filePath, 'b');
-      fs.mkdirSync(matchingDir, 0x1ed);
+      fs.mkdirSync(matchingDir, PERM_ARR);
       fs.writeFileSync(matchingFile, 'c');
       fs.writeFileSync(matchingFile2, 'd');
       watcher = chokidar.watch(watchPath, options)
@@ -724,10 +1087,10 @@ function runTests(baseopts) {
     it('should not prematurely filter dirs against complex globstar patterns', function(done) {
       var spy = sinon.spy();
       var deepFile = getFixturePath('subdir/subsub/subsubsub/a.txt');
-      var watchPath = getFixturePath('../../test-*/' + subdir + '/**/subsubsub/*.txt');
-      fs.mkdirSync(getFixturePath('subdir'), 0x1ed);
-      fs.mkdirSync(getFixturePath('subdir/subsub'), 0x1ed);
-      fs.mkdirSync(getFixturePath('subdir/subsub/subsubsub'), 0x1ed);
+      var watchPath = getGlobPath('../../test-*/' + subdir + '/**/subsubsub/*.txt');
+      fs.mkdirSync(getFixturePath('subdir'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub/subsubsub'), PERM_ARR);
       fs.writeFileSync(deepFile, 'b');
       watcher = chokidar.watch(watchPath, options)
         .on('all', spy)
@@ -743,17 +1106,17 @@ function runTests(baseopts) {
     it('should emit matching dir events', function(done) {
       var spy = sinon.spy();
       // test with and without globstar matches
-      var watchPaths = [getFixturePath('*'), getFixturePath('subdir/subsub/**/*')];
+      var watchPaths = [getGlobPath('*'), getGlobPath('subdir/subsub/**/*')];
       var deepDir = getFixturePath('subdir/subsub/subsubsub');
       var deepFile = sysPath.join(deepDir, 'a.txt');
-      fs.mkdirSync(getFixturePath('subdir'), 0x1ed);
-      fs.mkdirSync(getFixturePath('subdir/subsub'), 0x1ed);
+      fs.mkdirSync(getFixturePath('subdir'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub'), PERM_ARR);
       watcher = chokidar.watch(watchPaths, options)
         .on('all', spy)
         .on('ready', function() {
           spy.should.have.been.calledWith('addDir', getFixturePath('subdir'));
           spy.withArgs('addDir').should.have.been.calledOnce;
-          fs.mkdirSync(deepDir, 0x1ed);
+          fs.mkdirSync(deepDir, PERM_ARR);
           fs.writeFileSync(deepFile, Date.now());
           waitFor([[spy.withArgs('addDir'), 2], spy.withArgs('add', deepFile)], function() {
             if (win32Polling) return done();
@@ -767,6 +1130,33 @@ function runTests(baseopts) {
           });
         });
     });
+    it('should correctly handle glob with braces', function(done) {
+      var spy = sinon.spy();
+      var watchPath = upath.normalizeSafe(getGlobPath('{subdir/*,subdir1/subsub1}/subsubsub/*.txt'));
+      var deepFileA = getFixturePath('subdir/subsub/subsubsub/a.txt');
+      var deepFileB = getFixturePath('subdir1/subsub1/subsubsub/a.txt');
+      fs.mkdirSync(getFixturePath('subdir'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir/subsub/subsubsub'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir1'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir1/subsub1'), PERM_ARR);
+      fs.mkdirSync(getFixturePath('subdir1/subsub1/subsubsub'), PERM_ARR);
+      fs.writeFileSync(deepFileA, Date.now());
+      fs.writeFileSync(deepFileB, Date.now());
+      watcher = chokidar.watch(watchPath, options)
+        .on('all', spy)
+        .on('ready', function() {
+          spy.should.have.been.calledWith('add', deepFileA);
+          spy.should.have.been.calledWith('add', deepFileB);
+          fs.appendFileSync(deepFileA, Date.now());
+          fs.appendFileSync(deepFileB, Date.now());
+          waitFor([[spy, 4]], function() {
+            spy.should.have.been.calledWith('change', deepFileA);
+            spy.should.have.been.calledWith('change', deepFileB);
+            done();
+          });
+        });
+    });
   });
   describe('watch symlinks', function() {
     if (os === 'win32') return;
@@ -775,7 +1165,7 @@ function runTests(baseopts) {
     beforeEach(function(done) {
       linkedDir = sysPath.resolve(fixturesPath, '..', subdir + '-link');
       fs.symlink(fixturesPath, linkedDir, function() {
-        fs.mkdir(getFixturePath('subdir'), 0x1ed, function() {
+        fs.mkdir(getFixturePath('subdir'), PERM_ARR, function() {
           fs.writeFile(getFixturePath('subdir/add.txt'), 'b', done);
         });
       });
@@ -917,7 +1307,7 @@ function runTests(baseopts) {
       var linkedPath = getFixturePath('outside');
       var linkedFilePath = sysPath.join(linkedPath, 'text.txt');
       var linkPath = getFixturePath('subdir/subsub');
-      fs.mkdirSync(linkedPath, 0x1ed);
+      fs.mkdirSync(linkedPath, PERM_ARR);
       fs.writeFileSync(linkedFilePath, 'b');
       fs.symlinkSync(linkedPath, linkPath);
       watcher2 = chokidar.watch(getFixturePath('subdir'), options)
@@ -938,8 +1328,8 @@ function runTests(baseopts) {
       var dirSpy = sinon.spy(function dirSpy(){});
       var addSpy = sinon.spy(function addSpy(){});
       // test with relative path to ensure proper resolution
-      var watchDir = sysPath.relative(process.cwd(), linkedDir);
-      watcher = chokidar.watch(sysPath.join(watchDir, '**/*'), options)
+      var watchDir = upath.relative(process.cwd(), linkedDir);
+      watcher = chokidar.watch(upath.join(watchDir, '**/*'), options)
         .on('addDir', dirSpy)
         .on('add', addSpy)
         .on('ready', function() {
@@ -1025,8 +1415,8 @@ function runTests(baseopts) {
         });
         it('should emit `addDir` events for preexisting dirs', function(done) {
           var spy = sinon.spy();
-          fs.mkdir(getFixturePath('subdir'), 0x1ed, function() {
-            fs.mkdir(getFixturePath('subdir/subsub'), 0x1ed, function() {
+          fs.mkdir(getFixturePath('subdir'), PERM_ARR, function() {
+            fs.mkdir(getFixturePath('subdir/subsub'), PERM_ARR, function() {
               watcher = chokidar.watch(fixturesPath, options)
                 .on('addDir', spy)
                 .on('ready', function() {
@@ -1071,7 +1461,7 @@ function runTests(baseopts) {
             .on('add', spy)
             .on('ready', function() {
               spy.should.not.have.been.called;
-              fs.mkdir(testDir, 0x1ed, function() {
+              fs.mkdir(testDir, PERM_ARR, function() {
                 fs.writeFile(testPath, Date.now(), simpleCb);
               });
               waitFor([spy], function() {
@@ -1100,7 +1490,7 @@ function runTests(baseopts) {
           options.depth = 0
           var spy = sinon.spy();
           var testPath = getFixturePath('add.txt');
-          fs.mkdir(getFixturePath('subdir'), 0x1ed, w(function() {
+          fs.mkdir(getFixturePath('subdir'), PERM_ARR, w(function() {
             stdWatcher()
               .on('all', spy)
               .on('ready', function() {
@@ -1118,14 +1508,14 @@ function runTests(baseopts) {
     describe('ignored', function() {
       it('should check ignore after stating', function(done) {
         options.ignored = function(path, stats) {
-          if (path === testDir || !stats) return false;
+          if (upath.normalizeSafe(path) === upath.normalizeSafe(testDir) || !stats) return false;
           return stats.isDirectory();
         };
         var spy = sinon.spy();
         var testDir = getFixturePath('subdir');
-        fs.mkdirSync(testDir, 0x1ed);
+        fs.mkdirSync(testDir, PERM_ARR);
         fs.writeFileSync(sysPath.join(testDir, 'add.txt'), '');
-        fs.mkdirSync(sysPath.join(testDir, 'subsub'), 0x1ed);
+        fs.mkdirSync(sysPath.join(testDir, 'subsub'), PERM_ARR);
         fs.writeFileSync(sysPath.join(testDir, 'subsub', 'ab.txt'), '');
         watcher = chokidar.watch(testDir, options)
           .on('add', spy)
@@ -1144,7 +1534,7 @@ function runTests(baseopts) {
         var testDir = getFixturePath('subdir');
         var testFile = sysPath.join(testDir, 'add.txt');
         options.ignored = testDir;
-        fs.mkdirSync(testDir, 0x1ed);
+        fs.mkdirSync(testDir, PERM_ARR);
         fs.writeFileSync(testFile, 'b');
         watcher = chokidar.watch(fixturesPath, options)
           .on('all', spy)
@@ -1182,9 +1572,9 @@ function runTests(baseopts) {
     describe('depth', function() {
       beforeEach(function(done) {
         var i = 0, r = function() { i++ && w(done, options.useFsEvents && 200)(); };
-        fs.mkdir(getFixturePath('subdir'), 0x1ed, function() {
+        fs.mkdir(getFixturePath('subdir'), PERM_ARR, function() {
           fs.writeFile(getFixturePath('subdir/add.txt'), 'b', r);
-          fs.mkdir(getFixturePath('subdir/subsub'), 0x1ed, function() {
+          fs.mkdir(getFixturePath('subdir/subsub'), PERM_ARR, function() {
             fs.writeFile(getFixturePath('subdir/subsub/ab.txt'), 'b', r);
           });
         });
@@ -1279,7 +1669,7 @@ function runTests(baseopts) {
           .on('ready', function() {
             spy.should.have.been.calledWith('addDir', fixturesPath);
             spy.should.have.been.calledWith('addDir', getFixturePath('subdir'));
-            fs.mkdir(subdir2, 0x1ed, simpleCb);
+            fs.mkdir(subdir2, PERM_ARR, simpleCb);
             waitFor([[addSpy, 3]], function() {
               addSpy.should.have.been.calledThrice;
               if (win32Polling010) return done();
@@ -1362,7 +1752,7 @@ function runTests(baseopts) {
         var spy = sinon.spy();
         var testDir = getFixturePath('subdir');
         var renamedDir = getFixturePath('subdir-renamed');
-        fs.mkdir(testDir, 0x1ed, function() {
+        fs.mkdir(testDir, PERM_ARR, function() {
           watcher = chokidar.watch('.', options)
             .on('ready', function() {
               w(function() {
@@ -1385,7 +1775,7 @@ function runTests(baseopts) {
         var options2 = {};
         Object.keys(options).forEach(function(key) { options2[key] = options[key] });
         options2.cwd = getFixturePath('subdir');
-        watcher = chokidar.watch(getFixturePath('**'), options)
+        watcher = chokidar.watch(getGlobPath('**'), options)
           .on('all', spy1)
           .on('ready', w(function() {
             watcher2 = chokidar.watch(fixturesPath, options2)
@@ -1667,6 +2057,57 @@ function runTests(baseopts) {
           }));
         }));
       });
+      describe('race condition', function() {
+        // Reproduces bug https://github.com/paulmillr/chokidar/issues/546, which was causing an
+        // uncaught exception. The race condition is likelier to happen when stat() is slow.
+        var _fs = require('fs');
+        var _realStat = _fs.stat;
+        beforeEach(function() {
+          options.awaitWriteFinish = {pollInterval: 50, stabilityThreshold: 50};
+          options.ignoreInitial = true;
+
+          // Stub fs.stat() to take a while to return.
+          sinon.stub(_fs, 'stat', function(path, cb) { _realStat(path, w(cb, 250)); });
+        });
+
+        afterEach(function() {
+          // Restore fs.stat() back to normal.
+          sinon.restore(_fs.stat);
+        });
+
+        it('should handle unlink that happens while waiting for stat to return', function(done) {
+          var spy = sinon.spy();
+          var testPath = getFixturePath('add.txt');
+          stdWatcher()
+          .on('all', spy)
+          .on('ready', function() {
+            fs.writeFile(testPath, 'hello', simpleCb);
+            waitFor([spy], function() {
+              spy.should.have.been.calledWith('add', testPath);
+              _fs.stat.reset();
+              fs.writeFile(testPath, 'edit', simpleCb);
+              w(function() {
+                // There will be a stat() call after we notice the change, plus pollInterval.
+                // After waiting a bit less, wait specifically for that stat() call.
+                _fs.stat.reset();
+                waitFor([_fs.stat], function() {
+                  // Once stat call is made, it will take some time to return. Meanwhile, unlink
+                  // the file and wait for that to be noticed.
+                  fs.unlink(testPath, simpleCb);
+                  waitFor([spy.withArgs('unlink')], w(function() {
+                    // Wait a while after unlink to ensure stat() had time to return. That's where
+                    // an uncaught exception used to happen.
+                    spy.should.have.been.calledWith('unlink', testPath);
+                    if (win32Polling010) return done();
+                    spy.should.not.have.been.calledWith('change');
+                    done();
+                  }, 400));
+                });
+              }, 40)();
+            });
+          });
+        });
+      });
     });
   });
   describe('getWatched', function() {
@@ -1687,7 +2128,7 @@ function runTests(baseopts) {
         '..': [subdir.toString()],
         'subdir': []
       };
-      fs.mkdir(getFixturePath('subdir'), 0x1ed, function() {
+      fs.mkdir(getFixturePath('subdir'), PERM_ARR, function() {
         stdWatcher().on('ready', function() {
           expect(watcher.getWatched()).to.deep.equal(expected);
           done();
@@ -1699,7 +2140,7 @@ function runTests(baseopts) {
     before(closeWatchers);
     beforeEach(function(done) {
       options.ignoreInitial = true;
-      fs.mkdir(getFixturePath('subdir'), 0x1ed, w(done));
+      fs.mkdir(getFixturePath('subdir'), PERM_ARR, w(done));
     });
     it('should stop watching unwatched paths', function(done) {
       var spy = sinon.spy();
@@ -1726,8 +2167,8 @@ function runTests(baseopts) {
         .on('all', spy)
         .on('ready', w(function() {
           // test with both relative and absolute paths
-          var subdirRel = sysPath.relative(process.cwd(), getFixturePath('subdir'));
-          watcher.unwatch([subdirRel, getFixturePath('unl*')]);
+          var subdirRel = upath.relative(process.cwd(), getFixturePath('subdir'));
+          watcher.unwatch([subdirRel, getGlobPath('unl*')]);
           w(function() {
             fs.unlink(getFixturePath('unlink.txt'), simpleCb);
             fs.writeFile(getFixturePath('subdir/add.txt'), Date.now(), simpleCb);
