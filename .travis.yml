@@ -1,14 +1,13 @@
 language: node_js
 node_js:
-  - '10'
-  - '8'
+  - '7'
   - '6'
+  - '5'
+  - '4'
+  - '0.10'
 os:
   - linux
   - osx
 script:
-  - npm run test
-after_script:
-  - npm run coveralls
-  - npm run dtslint
+  - npm run ci-test
 sudo: false
