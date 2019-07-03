@@ -33,7 +33,7 @@
     "types/index.d.ts"
   ],
   "dependencies": {
-    "anymatch": "^2.0.0",
+    "vscode-anymatch": "microsoft/anymatch#b447e2626d238f8ca22e807c9b7bb204ab93da5e",
     "async-each": "^1.0.1",
     "braces": "^2.3.2",
     "glob-parent": "^3.1.0",
