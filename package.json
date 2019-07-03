@@ -46,7 +46,7 @@
     "upath": "^1.1.1"
   },
   "optionalDependencies": {
-    "fsevents": "^1.2.9"
+    "vscode-fsevents": "microsoft/fsevents#c754dc5e48570f9c297a9de29f36a695b5aad47f"
   },
   "devDependencies": {
     "@types/node": "^11.9.4",
